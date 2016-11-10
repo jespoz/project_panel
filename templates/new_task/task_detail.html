@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+{% block content %}
+	<input type="hidden" id="id" value="{{object.actividad_id}}">
+	<h3 class="title">
+		<span>{{object.actividad.nombre}}</span> 
+		<small>
+			{% ifequal object.estado_id 1 %} 
+				<span class="label label-danger">{{object.estado}}</span>
+			{% endifequal %}
+			{% ifequal object.estado_id 2 %} 
+				<span class="label label-warning">{{object.estado}}</span>
+			{% endifequal %}
+			{% ifequal object.estado_id 3 %} 
+				<span class="label label-success">{{object.estado}}</span>
+			{% endifequal %}
+			{% ifequal object.estado_id 4 %} 
+				<span class="label label-primary">{{object.estado}}</span>
+			{% endifequal %}
+		</small>
+	</h3>
+	<article>
+		{% if object.vencimiento < hoy and not object.terminado %}
+			<div class="alert alert-danger" role="alert">
+				<strong>Atrasado!</strong> Esta actividad se encuentra atrasada de acuerdo a su fecha de vencimiento
+			</div>
+		{% endif %}
+		<div class="bs-callout bs-callout-info">
+			<h4>Descripción:</h4>
+			<p>{{object.actividad.descripcion|safe}}</p>
+			<small>Actividad registrada por: {{object.actividad.usuario}}</small>
+		</div>
+		<div class="three_column">
+			<div class="dates">
+				<div class="panel">
+					<div class="panel-heading">
+						<div class="panel-row">
+							<span>Fechas Actividad</span>
+							<i class="ion-calendar"></i>
+						</div>
+					</div>
+					<div class="panel-body">
+						<div class="panel-row">
+	    					<span>Registrado:</span>
+	    					<small>{{object.actividad.creado|date:"d F Y"}}</small>
+    					</div>
+    					<div class="panel-row">
+	    					<span>En curso:</span>
+	    					{% if object.inicio %}
+	    						<small>{{object.inicio|date:"d F Y"}}</small>
+	    					{% else %}
+	    						<form action="{% url 'set_encurso' pk=object.actividad_id %}" method="POST">
+	    							{% csrf_token %}
+	    							<button type="submit" class="btn btn-primary btn-xs">Marcar como iniciado</button>
+	    						</form>
+	    					{% endif %}
+    					</div>
+    					{% if object.estado_id > 1 %}
+    						<div class="panel-row">
+		    					<span>Vencimiento:</span>
+		    					{% if object.vencimiento %}
+		    						<small>{{object.vencimiento|date:"d F Y"}}</small>
+		    					{% else %}
+									<input class="datepicker" type="text" class="form-control" value="definir fecha">
+		    					{% endif %}
+	    					</div>
+	    					{% if object.terminado or user.is_staff %}
+		    					<div class="panel-row">
+			    					<span>Terminado:</span>
+			    					{% if object.terminado %}
+			    						<small>{{object.terminado|date:"d F Y"}}</small>
+			    					{% else %}
+			    						<form action="{% url 'set_terminado' pk=object.actividad_id %}" method="POST">
+			    							{% csrf_token %}
+			    							<button type="submit" class="btn btn-success btn-xs">Marcar como terminado</button>
+			    						</form>
+			    					{% endif %}
+		    					</div>
+	    					{% endif %}
+    					{% endif %}
+    				</div>
+				</div>
+				{% if object.inicio %}
+					<div class="panel">
+						<div class="panel-heading">
+							<div class="panel-row">
+								<span>Costos Asociados</span>
+								<i class="ion-cash"></i>
+							</div>
+						</div>
+						<div class="panel-body">
+							<div class="panel-row">
+								<button type="button" id="create_cost" class="btn btn-lg btn-block">+</button>
+							</div>
+							<div id="new_cost"></div>
+							<div class="cost_list">
+								{% if costs_activity %}
+									{% for self in costs_activity %}
+										<div class="costs" style="border-bottom: solid 1px #CCC;">
+											<span>{{self.item}}</span>
+											<b>{{self.costo|floatformat:0}} UF</b>
+										</div>
+									{% endfor %}
+									<div class="costs-total">
+										<span><b>Costo Total:</b></span>
+										<b>{{costo_total|floatformat:0}} UF</b>
+									</div>
+								{% else %}
+									<h5>No existen costos asociados...</h5>
+								{% endif %}
+							</div>
+						</div>
+					</div>
+				{% endif %}
+				{% if object.inicio %}
+					<div class="panel">
+					<div class="panel-heading">
+						<div class="panel-row">
+							<span>Tareas</span>
+							<i class="ion-android-done-all"></i>
+						</div>
+					</div>
+					<div class="panel-body">
+						<div class="panel-row">
+							<button type="button" id="create_task" class="btn btn-lg btn-block">+</button>
+						</div>
+						<div id="new_task"></div>
+						<div class="tasks_list">
+							<ul class="tasks_list_ul">
+								{% for self in tasks %}
+									<li>
+										<input id="task-{{self.id}}" type="checkbox" {% if self.completado %}checked{% endif %}>
+										<label data-id="{{self.id}}" class="label_check" for="task-{{self.id}}">{{self.tarea}}</label>
+									</li>
+								{% endfor %}
+							</ul>
+						</div>
+					</div>
+					</div>
+				{% endif %}	
+			</div>
+			{% if object.inicio %}
+				<div class="posts">
+				<div class="panel">
+					<div class="panel-body">
+						<form action="/send_comment/" method="POST" class="full-form" enctype="multipart/form-data">
+							{% csrf_token %}
+							<input type="hidden" name="id" value="{{object.actividad_id}}">
+							<div class="form-group no-margin-bottom">
+								<textarea rows="3" class="form-control" name="comentario" placeholder="Nueva Entrada..."></textarea>
+							    <label class="btn btn-file">
+							        <i class="ion-paperclip"></i>
+							        <span id="uploadFile"></span>
+							        <input id="uploadBtn" name="file" type="file" style="display: none;">
+							        <button class="btn btn-primary btn-sm">Enviar</button>
+							    </label>
+							</div>
+						</form>
+					</div>
+				</div>
+				<div class="comments">
+					<ul class="timeline">
+						{% for self in comments %}
+							<li id="{{self.id}}">
+								<div class="timeline-autor">
+									<span>Registrado por: <b>{{self.usuario}}</b></span>
+								</div>
+								<div class="timeline-comentario">
+									<span>{{self.comentario|safe}}</span>
+								</div>
+								<div class="timeline-footer">
+									<small>{{self.creado}}</small>
+									{% if self.adjunto %}
+										<span data-toggle="tooltip" data-placement="left" title="{{self.adjunto}}" class="archivo_adjunto"><a href="{{self.adjunto.url}}" download><i class="ion-paperclip"></i></a></span>
+									{% endif %}
+								</div>
+							</li>
+						{% endfor %}
+					</ul>
+					<div class="full-comment">
+						<a id="load_more">
+							<span>Ver más</span>
+							<i class="ion-ios-arrow-down"></i>
+						</a>
+					</div>
+				</div>
+				</div>
+			{% endif %}	
+			<div class="kpi">
+				<div class="panel">
+					<div class="panel-heading">
+						<div class="panel-row">
+							<span>Asignaciones</span>
+							<i class="ion-pricetags"></i>
+						</div>
+					</div>
+					<div class="panel-body assigned">
+						{% ifequal object.estado_id 3 %} 
+							<div class="form-group" style="display:flex;">
+								<span style="flex: 1;">Asignado a:</span>
+								<span style="text-align: right; flex: 1;"><b class="text-success">{{object.asignado.first_name}} {{object.asignado.last_name}}</b></span>
+							</div>
+						{% else %}
+							{% if user.is_staff %}
+								<div class="form-group">
+									<span class="wrap">Asignado a:</span>
+									<select id="user_assigned" class="form-control" {% if not object.asignado %}style="background-color: #f2dede; color: #a94442; border-color: #ebccd1;"{% endif %}>
+										{% if not object.asignado %}
+											<option value="" selected="">Seleccionar...</option>
+										{% endif %}
+										{% for self in users %}
+											{% ifequal self.id object.asignado_id  %} 
+												<option value="{{self.id}}" selected>{{self.first_name}} {{self.last_name}}</option>
+											{% else %}
+												<option value="{{self.id}}">{{self.first_name}} {{self.last_name}}</option>
+											{% endifequal %}
+										{% endfor %}
+									</select>
+								</div>
+							{% else %}
+								<div class="form-group" style="display:flex;">
+									<span style="flex: 1;">Asignado a:</span>
+									<span style="text-align: right; flex: 1;"><b class="text-success">{{object.asignado.first_name}} {{object.asignado.last_name}}</b></span>
+								</div>
+							{% endif %}
+						{% endifequal %}
+						{% ifequal object.estado_id 3 %} 
+							<div class="form-group" style="display:flex;">
+								<span style="flex: 1;">Área Asociada:</span>
+								<span style="text-align: right; flex: 1;"><b class="text-success">{{object.area}}</b></span>
+							</div>
+						{% else %}
+							{% if user.is_staff %}
+								<div class="form-group">
+									<span class="wrap">Área Asociada:</span>
+									<select id="area_assigned" class="form-control" {% if not object.area %}style="background-color: #f2dede; color: #a94442; border-color: #ebccd1;"{% endif %}>
+										{% if not object.area %}
+											<option value="" selected="">Seleccionar...</option>
+										{% endif %}
+										{% for self in areas %}
+											{% ifequal self.id object.area_id  %} 
+												<option value="{{self.id}}" selected>{{self.area}}</option>
+											{% else %}
+												<option value="{{self.id}}">{{self.area}}</option>
+											{% endifequal %}
+										{% endfor %}
+									</select>
+								</div>
+							{% else %}
+								<div class="form-group" style="display:flex;">
+									<span style="flex: 1;">Área Asociada:</span>
+									<span style="text-align: right; flex: 1;"><b class="text-success">{{object.area}}</b></span>
+								</div>
+							{% endif %}
+						{% endifequal %}
+						{% ifequal object.estado_id 3 %} 
+							<div class="form-group" style="display:flex;">
+								<span style="flex: 1;">Tipo de Actividad:</span>
+								<span style="text-align: right; flex: 1;"><b class="text-success">{{object.tipo}}</b></span>
+							</div>
+						{% else %}
+							{% if user.is_staff %}
+								<div class="form-group">
+									<span class="wrap">Tipo de Actividad:</span>
+									<select id="type_assigned" class="form-control" {% if not object.tipo %}style="background-color: #f2dede; color: #a94442; border-color: #ebccd1;"{% endif %}>
+										{% if not object.tipo %}
+											<option value="" selected="">Seleccionar...</option>
+										{% endif %}
+										{% for self in types %}
+											{% ifequal self.id object.tipo_id  %} 
+												<option value="{{self.id}}" selected>{{self.tipo}}</option>
+											{% else %}
+												<option value="{{self.id}}">{{self.tipo}}</option>
+											{% endifequal %}
+										{% endfor %}
+									</select>
+								</div>
+							{% else %}
+								<div class="form-group" style="display:flex;">
+									<span style="flex: 1;">Tipo de Actividad:</span>
+									<span style="text-align: right; flex: 1;"><b class="text-success">{{object.tipo}}</b></span>
+								</div>
+							{% endif %}
+						{% endifequal %}
+					</div>
+				</div>
+				{% if object.vencimiento %}
+					<div class="panel">
+						<div class="panel-heading">
+							<div class="panel-row">
+								<span>Indicadores</span>
+								<i class="ion-stats-bars"></i>
+							</div>
+						</div>
+						<div class="panel-body">
+							<div>
+								<div id="graph" style="width: 100%; height: 200px; margin: 0 auto;" data-value="{{cumplimiento}}"></div>
+								<div id="value-graph">{{cumplimiento}}%</div>
+							</div>
+							<div class="alert alert-info" role="alert">
+								<span><b>{{restantes}}</b> días restantes</span>
+							</div>
+						</div>
+					</div>
+				{% endif %}	
+				{% if object.inicio %}
+					<div class="panel">
+					<div class="panel-heading">
+						<div class="panel-row">
+							<span>Usuarios Involucrados</span>
+							<i class="ion-ios-people"></i>
+						</div>
+					</div>
+					<div class="panel-body">
+						<div class="panel-row">
+							<button type="button" id="users_activity" class="btn btn-lg btn-block">+</button>
+						</div>
+						<div id="new_user"></div>
+						<div class="users_list">
+							{% for self in users_activity %}
+								<div class="users" style="border-bottom: solid 1px #CCC;">
+									<h6><b>{{self.usuario_asigando}}</b></h6>
+									<p>{{self.funciones}}</p>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+					</div>
+				{% endif %}
+				{% if object.inicio %}
+					<div class="panel">
+						<div class="panel-heading">
+							<div class="panel-row">
+								<span>Datos Adjuntos</span>
+								<i class="ion-android-archive"></i>
+							</div>
+						</div>
+						<div class="panel-body">
+							{% for self in medias %}
+								{% if self.adjunto %}
+									<p>
+										{% for x in medias_context %}
+											{% ifequal x.archivo self.adjunto %} 
+												<a style="position:relative;" class="download-file" href="{{self.adjunto.url}}" download><i class="{{x.extension}}"></i> {{self.adjunto|truncatechars:40}} <small style="right: 0;position: absolute;"><b>{{self.adjunto.size|filesizeformat}}</b></small></a>
+											{% endifequal %}
+										{% endfor %}
+									</p>
+								{% endif %}
+							{% endfor %}
+						</div>
+					</div>
+				{% endif %}
+			</div>
+		</div>
+	</article>
+
+{% endblock content %}
+
+{% block extra_scripts %}
+	<script src="{% static 'js/highcharts-more.js' %}"></script>
+	<script src="{% static 'js/graficos_detalle.js' %}"></script>
+	<script>
+		if ($("[name=comentario]").length){
+        	CKEDITOR.replace( 'comentario', {height: 80});
+    	}
+        $('[data-toggle="tooltip"]').tooltip();
+        $('.datepicker').datepicker({
+        	language: 'es',
+        	format: 'yyyy-mm-dd',
+        	autoclose: true
+        });
+        $("aside").toggle("slow");
+    </script>
+{% endblock extra_scripts %}

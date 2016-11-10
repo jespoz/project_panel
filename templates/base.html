@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+{% load i18n staticfiles %}
+<html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" type="image/png" href="{% static "img/favicon.ico" %}">
+        <title>Proyectos Venta Nacional</title>
+
+        <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="{% static 'css/datepicker.css' %}">
+        <link rel="stylesheet" href="{% static 'css/pagination.css' %}">
+        <link rel="stylesheet" href="{% static 'css/jasny-bootstrap.min.css' %}">
+        <link href="https://file.myfontastic.com/dtSpDhE2AxeUPmraLBUFSC/icons.css" rel="stylesheet">
+        {% block extra_head %}{% endblock extra_head %}
+        <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+
+        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+          <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+          <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+    </head>
+    <body>
+        <header>
+            <div id="branding">
+                <a href="{% url 'list_tasks' %}">
+                    <img src="/static/img/logo.png" alt="Agrosuper" height="70" width="110">
+                </a>
+            </div>
+            {% if user.is_authenticated %}
+                <div class="usuario">
+                    <i class="icono-user"></i>
+                    {% if user.first_name %}
+                        <a href="">{{ user.first_name }} {{ user.last_name }}</a>
+                    {% else %}
+                        <a href="">{{ user }}</a>
+                    {% endif %}
+                </div>
+                <div id="user-tools">
+                    {% block userlinks %}
+                        <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a> /
+                        <a href="{% url 'logout' %}">{% trans 'Log out' %}</a>
+                    {% endblock %}
+                </div>
+                <div id="hide-menu" class="btn-header pull-right">
+                    <span>
+                        <a href="javascript:void(0);" data-action="toggleMenu" title="Collapse Menu">
+                            <i class="ion-navicon-round"></i>
+                        </a>
+                    </span>
+                </div>
+            {% endif %}
+            <div class="border"></div>
+        </header>
+        <main>
+            <aside>
+                <nav>
+                    <div class="title_section">Actividades Públicas</div>
+                    <div class="activities">
+                        <ul id="sidemenu">
+                            {% for self in estados %}
+                                <li>
+                                    <a class="collapse" href="javascript:void(0)" data-id="{{self.estado_id}}" data-publico="{{self.actividad__publico}}">
+                                        <span class="menu-item-parent">{{self.estado__estado}}</span>
+                                        <b class="collapse-sign">
+                                            <em class="ion-ios-plus-outline"></em>
+                                        </b>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% block private %}{% endblock private %}
+                    <div class="title_section">Enlaces</div>
+                    <div class="activities">
+                        <ul class="li_project_private">
+                            <li>
+                                <a href="http://192.168.1.75:8000/" target="_blank">
+                                    <span>Panel Balanced Scorecard</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+            </aside>
+            <div class="container">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </main>
+        <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+        <!-- Include all compiled plugins (below), or include individual files as needed -->
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+        <script src="{% static 'js/bootstrap-datepicker.js' %}"></script>
+        <script src="{% static 'js/bootstrap-datepicker.es.min.js' %}"></script>
+        <script src="{% static 'js/jasny-bootstrap.min.js' %}"></script>
+        <script type="text/javascript" src="{% static 'django_modalview/js/jquery.form.js' %}"></script>
+        <script src="//cdn.ckeditor.com/4.5.10/basic/ckeditor.js"></script>
+        <script src="{% static 'js/highcharts.js' %}"></script>
+        <script src="{% static 'js/custom.js' %}"></script>
+        {% block extra_scripts %}
+        {% endblock %}
+
+        <script type="text/javascript">
+            $(function() {
+                $('.dateinput').datepicker({
+                    format: 'dd/mm/yyyy'
+                });
+                $('.logout-button').tooltip();
+                $('table.rowlink').rowlink()
+                $(".usuario").on('click', function(e){
+                    e.preventDefault();
+                    $("#user-tools").slideToggle();
+                });
+                {% block js %}
+                {% endblock %}
+            });
+        </script>
+        
+    </body>
+</html>

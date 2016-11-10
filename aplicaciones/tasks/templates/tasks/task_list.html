@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% load staticfiles %}
+{% load humanize %}
+
+{% block extra_head %}
+	<link rel="stylesheet" href="{% static "css/bootstrap-switch.min.css" %}">
+	<link rel="stylesheet" href="{% static "css/jquery.circliful.css" %}">
+	<style>
+		#cumplimiento {
+		  float: left;
+		  display: inline;
+		}
+		.wrapper {
+		  overflow: hidden;
+		  padding: 20px;
+		  width:100%;
+		}
+		.circliful {
+		    position: relative; 
+		}
+
+		.circle-text, .circle-info, .circle-text-half, .circle-info-half {
+		    width: 100%;
+		    position: absolute;
+		    text-align: center;
+		    display: inline-block;
+		}
+
+		.circle-info {
+			color: #999;
+		}
+
+		.circliful .fa {
+			margin: -10px 3px 0 3px;
+			position: relative;
+			bottom: 4px;
+		}
+		.circle-info-half {
+			color:#5CB85C !important;
+			font-size: 16px !important;
+			font-weight: 300 !important;
+			line-height: 290px !important;
+		}
+		.circle-text {
+			color:#5CB85C !important;
+			line-height: 230px !important;
+		}
+	</style>
+{% endblock extra_head %}
+
+{% block private %}
+	{% if private_list %}
+        <nav>
+            <div class="title_section">Actividades Privadas</div>
+            <div class="activities">
+                <ul class="li_project_private">
+                    {% for self in private_list %}
+                        <li>
+                            <a href="{% url 'task_detail' pk=self.actividad_id %}">
+                                <span>{{self}}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </nav>
+    {% endif %}
+{% endblock private %}
+
+{% block content %}
+    <div class="padding pull-right">
+        <button class="btn btn-success" data-target="#createTask" data-toggle="modal">
+        	<i class="ion-plus-round"></i>
+        	<span> Agregar</span>
+        </button>
+    </div>
+    <div class="padding dashboard three_column">
+    	<div class="dashboard-graph">
+    		<div class="panel">
+    			<div class="panel-heading">
+    				<div class="panel-row">
+    					<span>Actividades</span>
+    					<i class="ion-clipboard"></i>
+    				</div>
+    			</div>
+    			<div class="panel-body">
+    				<div id="graph-actividades" style="min-width: 310px; min-height: 300px; max-width: 600px; margin: 0 auto"></div>
+    			</div>
+    		</div>
+    		<div class="panel">
+    			<div class="panel-heading">
+    				<div class="panel-row">
+    					<span>Actividades en Curso</span>
+    					<i class="ion-clock"></i>
+    				</div>
+    			</div>
+    			<div class="panel-body">
+    				<div id="graph-encurso" style="min-width: 310px; min-height: 300px; max-width: 600px; margin: 0 auto"></div>
+    			</div>
+    		</div>
+    		<div class="panel">
+    			<div class="panel-heading">
+    				<div class="panel-row">
+    					<span>Actividades Terminadas</span>
+    					<i class="ion-android-done-all"></i>
+    				</div>
+    			</div>
+    			<div class="panel-body">
+    				<div id="graph-terminadas" style="min-width: 310px; min-height: 300px; max-width: 600px; margin: 0 auto"></div>
+    			</div>
+    		</div>
+    	</div>
+    </div>
+    <div class="padding">
+    	<div class="two-column">
+    		<div class="table-container">
+		    	<table id="table_costos" class="table table-hover table-responsive">
+					<thead>
+						<tr>
+							<th>Área</th>
+							<th>Actividades</th>
+							<th>Costos</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for self in resumen %}
+							<tr data-id="{{self.id}}">
+								{% if self.area %}
+									<td>{{forloop.counter}}. <span>{{self.area}}</span></td>
+								{% else %}
+									<td></td>
+								{% endif %}
+								<td>{{self.cantidad}}</td>
+								<td>{{self.costo|floatformat:0|intcomma}} UF</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+					<tfoot>
+						<tr>
+							<td>Totales</td>
+							<td>{{total_act}}</td>
+							<td>{{total_cost|floatformat:0|intcomma}} UF</td>
+						</tr>
+					</tfoot>
+				</table>
+			</div>
+			<div id="cumplimiento_general" style="background-color: white;margin-left: 20px; box-shadow: 0 1px 2px rgba(0,0,0,.05);">
+				<h5 class="text-center" style="background-color: #00669E;color: white;line-height: 36px;margin-top: 0;">Actividades Terminadas</h5>
+				<div class="wrapper">
+					<ul class="circles">
+						<li id="cumplimiento" data-dimension="250" data-text="{{cumpl_total|floatformat:0}}%" data-info="% Cumpl" data-width="25" data-fontsize="40" data-percent="{{cumpl_total|floatformat:0}}" data-fgcolor="#5CB85C" data-bgcolor="#eee" data-fill="#DDD"></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+    </div>
+	<div class="modal fade" id="createTask" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="myModalLabel">Agregar Actividad</h4>
+				</div>
+				<form action="{% url 'createTask' %}" method="POST">
+					<div class="modal-body">
+							{% csrf_token %}
+							<div class="form-group">
+			            		<label for="id_nombre">Nombre:</label>
+			            		<input class="form-control" id="id_nombre" maxlength="50" name="nombre" required="" type="text">
+			            	</div>
+							<div class="form-group">
+								<label for="id_descripcion">Descripción:</label>
+								<textarea class="form-control" cols="40" id="id_descripcion" name="descripcion" rows="5" required=""></textarea>
+							</div>
+							<div class="form-group">
+								<label for="id_publico">Publico:</label>
+								<input id="switch-size" name="publico" checked="" data-size="mini" type="checkbox">
+							</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+						<button type="submit" class="btn btn-success">Agregar</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block extra_scripts %}
+	<script src="{% static 'js/bootstrap-switch.min.js' %}"></script>
+	<script src="{% static 'js/graficos_dashboard.js' %}"></script>
+	<script src="{% static 'js/jquery.circliful.min.js' %}"></script>
+	<script>
+		$("#switch-size").bootstrapSwitch({
+			onColor: 'success',
+			onText: 'SI',
+			offText: 'NO'
+		});
+	</script>
+	<script>
+        CKEDITOR.replace( 'descripcion' );
+    </script>
+    <script>
+    $("#cumplimiento").circliful();
+    </script>
+{% endblock extra_scripts %}
